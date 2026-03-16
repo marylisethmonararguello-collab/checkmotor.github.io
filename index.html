@@ -523,8 +523,8 @@
         const storage = firebase.storage();
 
         // Referencias a las colecciones de Firestore
-        const productsRef = db.collection("products");
-        const categoriesRef = db.collection("categories");
+        const productsRef = db.collection("users").doc(currentUser.uid).collection("products");
+        const categoriesRef = db.collection("users").doc(currentUser.uid).collection("categories");
         const usersRef = db.collection("users");
 
         // Variables globales
