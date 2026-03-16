@@ -1,1338 +1,460 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Firebase App (el core de Firebase) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <!-- Firebase Firestore -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- Firebase Auth -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- Firebase Analytics -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #e74c3c;
-            --accent: #3498db;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .navbar {
-            background-color: var(--primary);
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .product-img {
-            height: 180px;
-            object-fit: cover;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-        }
-        
-        .btn-primary {
-            background-color: var(--accent);
-            border: none;
-        }
-        
-        .btn-danger {
-            background-color: var(--secondary);
-            border: none;
-        }
-        
-        .quantity-btn {
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-        
-        .quantity-display {
-            min-width: 40px;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .user-badge {
-            background-color: var(--accent);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
-        
-        .categories-section {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 25px;
-        }
-        
-        .categories-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .categories-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .category-badge {
-            padding: 8px 15px;
-            background-color: var(--light);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            position: relative;
-        }
-        
-        .category-badge:hover {
-            background-color: var(--accent);
-            color: white;
-        }
-        
-        .category-badge.active {
-            background-color: var(--accent);
-            color: white;
-        }
-        
-        .category-products-count {
-            background-color: var(--primary);
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-        
-        .empty-categories {
-            text-align: center;
-            padding: 20px;
-            color: #6c757d;
-        }
-        
-        .category-filter {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .delete-category-btn {
-            background: none;
-            border: none;
-            color: #ff6b6b;
-            cursor: pointer;
-            margin-left: 5px;
-            font-size: 0.9rem;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
-        
-        .delete-category-btn:hover {
-            opacity: 1;
-            color: #ff0000;
-        }
-        
-        .category-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        
-        .sync-status {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            z-index: 1000;
-        }
-        
-        .sync-online {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .sync-offline {
-            background-color: #dc3545;
-            color: white;
-        }
-        
-        .firebase-config-info {
-            background-color: #f8f9fa;
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 0 5px 5px 0;
-        }
-    </style>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Inventario</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+<style>
+
+body{
+background:#f3f4f7;
+font-family:Arial;
+}
+
+.navbar{
+background:#2c3e50;
+}
+
+.card{
+border-radius:10px;
+box-shadow:0 3px 8px rgba(0,0,0,.15);
+}
+
+.product-img{
+height:180px;
+object-fit:cover;
+}
+
+.login-box{
+max-width:420px;
+margin:auto;
+margin-top:120px;
+background:white;
+padding:30px;
+border-radius:10px;
+}
+
+.hidden{
+display:none;
+}
+
+.stats{
+display:flex;
+gap:15px;
+margin-bottom:20px;
+flex-wrap:wrap;
+}
+
+.stat{
+flex:1;
+min-width:150px;
+background:white;
+padding:15px;
+border-radius:8px;
+text-align:center;
+box-shadow:0 3px 6px rgba(0,0,0,.1);
+}
+
+.lowStock{
+border:2px solid red;
+}
+
+</style>
+
 </head>
+
 <body>
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay hidden">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
-    </div>
 
-    <!-- Sync Status Indicator -->
-    <div id="syncStatus" class="sync-status hidden">
-        <i class="fas fa-wifi"></i> <span id="syncStatusText">Sincronizando...</span>
-    </div>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-car me-2"></i>INVENTARIO
-            </a>
-            <div class="d-flex">
-                <span class="user-badge me-3" id="userBadge">
-                    <i class="fas fa-user me-1"></i> <span id="currentUser">Invitado</span>
-                </span>
-                <button class="btn btn-outline-light btn-sm" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Salir
-                </button>
-            </div>
-        </div>
-    </nav>
+<nav class="navbar navbar-dark">
+<div class="container">
 
-    <!-- Login Form -->
-    <div id="loginSection" class="login-container">
-        <h2 class="text-center mb-4">Acceso al Inventario</h2>
-        <form id="loginForm">
-            <div class="mb-3">
-                <label for="username" class="form-label">Usuario</label>
-                <input type="text" class="form-control" id="username" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-        </form>
-        <p class="mt-3 text-center">
-            ¿No tienes cuenta? <a href="#" id="showRegister">Regístrate aquí</a>
-        </p>
-    </div>
+<span class="navbar-brand">
+<i class="fa fa-box"></i> Inventario
+</span>
 
-    <!-- Register Form -->
-    <div id="registerSection" class="login-container hidden">
-        <h2 class="text-center mb-4">Registro de Usuario</h2>
-        <form id="registerForm">
-            <div class="mb-3">
-                <label for="newUsername" class="form-label">Usuario</label>
-                <input type="text" class="form-control" id="newUsername" required>
-            </div>
-            <div class="mb-3">
-                <label for="newPassword" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="newPassword" required>
-            </div>
-            <div class="mb-3">
-                <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
-                <input type="password" class="form-control" id="confirmPassword" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Registrarse</button>
-        </form>
-        <p class="mt-3 text-center">
-            ¿Ya tienes cuenta? <a href="#" id="showLogin">Inicia sesión aquí</a>
-        </p>
-    </div>
+<div>
 
-    <!-- Main Application (hidden initially) -->
-    <div id="appSection" class="container mt-4 hidden">
-        <!-- Información de Firebase -->
-        <div class="firebase-config-info">
-            <h5><i class="fas fa-database"></i> Conectado a Firebase</h5>
-            <p class="mb-0">Tu inventario está siendo guardado en la nube y se sincronizará en todos tus dispositivos.</p>
-        </div>
+<span id="userEmail" class="text-white me-3"></span>
 
-        <!-- Sección de Categorías -->
-        <div class="categories-section">
-            <div class="categories-header">
-                <h3><i class="fas fa-tags me-2"></i>Categorías</h3>
-                <div class="category-actions">
-                    <button class="btn btn-sm btn-primary" id="addCategoryBtn">
-                        <i class="fas fa-plus me-1"></i> Nueva Categoría
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" id="manageCategoriesBtn">
-                        <i class="fas fa-cog me-1"></i> Gestionar
-                    </button>
-                </div>
-            </div>
-            
-            <div class="category-filter mb-3">
-                <label for="categoryFilter" class="form-label mb-0">Filtrar por categoría:</label>
-                <select class="form-select form-select-sm" id="categoryFilter" style="width: auto;">
-                    <option value="all">Todas las categorías</option>
-                    <!-- Las opciones se cargarán dinámicamente -->
-                </select>
-            </div>
-            
-            <div class="categories-list" id="categoriesList">
-                <!-- Las categorías se cargarán aquí dinámicamente -->
-            </div>
-        </div>
+<button class="btn btn-light btn-sm" id="logoutBtn">
+Salir
+</button>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-tools me-2"></i>Inventario de Repuestos</h2>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                <i class="fas fa-plus me-1"></i> Agregar Producto
-            </button>
-        </div>
+</div>
 
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <input type="text" id="searchInput" class="form-control" placeholder="Buscar producto...">
-                    <button class="btn btn-outline-secondary" type="button">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="col-md-6 text-end">
-                <div class="btn-group">
-                    <button class="btn btn-outline-primary" id="sortByName">
-                        <i class="fas fa-sort-alpha-down"></i> Ordenar por Nombre
-                    </button>
-                    <button class="btn btn-outline-primary" id="sortByQuantity">
-                        <i class="fas fa-sort-numeric-down"></i> Ordenar por Cantidad
-                    </button>
-                </div>
-            </div>
-        </div>
+</div>
+</nav>
 
-        <div class="row" id="productList">
-            <!-- Los productos se cargarán aquí dinámicamente -->
-        </div>
-    </div>
 
-    <!-- Add Product Modal -->
-    <div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Agregar Nuevo Producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addProductForm">
-                        <div class="mb-3">
-                            <label for="productName" class="form-label">Nombre del Producto</label>
-                            <input type="text" class="form-control" id="productName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="productCategory" class="form-label">Categoría</label>
-                            <select class="form-control" id="productCategory" required>
-                                <option value="">Seleccione una categoría</option>
-                                <!-- Las opciones se cargarán dinámicamente -->
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="productPrice" class="form-label">Precio</label>
-                            <input type="number" class="form-control" id="productPrice" step="0.01" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="productQuantity" class="form-label">Cantidad</label>
-                            <input type="number" class="form-control" id="productQuantity" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="productImage" class="form-label">Imagen del Producto</label>
-                            <input type="file" class="form-control" id="productImage" accept="image/*">
-                            <div class="form-text">Suba una imagen del producto (opcional)</div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="saveProductBtn">Guardar Producto</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<div id="loginSection" class="login-box">
 
-    <!-- Edit Product Modal -->
-    <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Editar Producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editProductForm">
-                        <input type="hidden" id="editProductId">
-                        <div class="mb-3">
-                            <label for="editProductName" class="form-label">Nombre del Producto</label>
-                            <input type="text" class="form-control" id="editProductName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editProductCategory" class="form-label">Categoría</label>
-                            <select class="form-control" id="editProductCategory" required>
-                                <!-- Las opciones se cargarán dinámicamente -->
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editProductPrice" class="form-label">Precio</label>
-                            <input type="number" class="form-control" id="editProductPrice" step="0.01" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editProductQuantity" class="form-label">Cantidad</label>
-                            <input type="number" class="form-control" id="editProductQuantity" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editProductImage" class="form-label">Imagen del Producto</label>
-                            <input type="file" class="form-control" id="editProductImage" accept="image/*">
-                            <div class="form-text">Suba una nueva imagen (opcional)</div>
-                            <div id="currentImageContainer" class="mt-2"></div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="updateProductBtn">Actualizar Producto</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<h4 class="text-center mb-3">Acceso</h4>
 
-    <!-- Add Category Modal -->
-    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Agregar Nueva Categoría</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addCategoryForm">
-                        <div class="mb-3">
-                            <label for="categoryName" class="form-label">Nombre de la Categoría</label>
-                            <input type="text" class="form-control" id="categoryName" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="saveCategoryBtn">Guardar Categoría</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<form id="loginForm">
 
-    <!-- Manage Categories Modal -->
-    <div class="modal fade" id="manageCategoriesModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Gestionar Categorías</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="categoriesManagementList">
-                        <!-- Las categorías para gestionar se cargarán aquí -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<input class="form-control mb-2" id="email" placeholder="Email" required>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Configuración de Firebase - CON TUS CREDENCIALES
-        const firebaseConfig = {
-            apiKey: "AIzaSyCOlWzZG-q_dEVOXcl_VUeJSqyOLjgUspE",
-            authDomain: "inventario-checkmotor.firebaseapp.com",
-            projectId: "inventario-checkmotor",
-            storageBucket: "inventario-checkmotor.appspot.com",
-            messagingSenderId: "477154912469",
-            appId: "1:477154912469:web:41eb97c2f847946dd89a5c",
-            measurementId: "G-7DB811LTYL"
-        };
+<input class="form-control mb-3" id="password" type="password" placeholder="Contraseña" required>
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const analytics = firebase.analytics();
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const storage = firebase.storage();
+<button class="btn btn-primary w-100">Entrar</button>
 
-        // Referencias a las colecciones de Firestore
-        const productsRef = db.collection("users").doc(currentUser.uid).collection("products");
-        const categoriesRef = db.collection("users").doc(currentUser.uid).collection("categories");
-        const usersRef = db.collection("users");
+</form>
 
-        // Variables globales
-        let currentUser = null;
-        let products = [];
-        let categories = [];
-        let productsListener = null;
-        let categoriesListener = null;
+<hr>
 
-        // Inicialización de la aplicación
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar estado de autenticación
-            auth.onAuthStateChanged((user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById('currentUser').textContent = user.email;
+<button id="registerBtn" class="btn btn-success w-100">
+Crear cuenta
+</button>
 
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('registerSection').classList.add('hidden');
-        document.getElementById('appSection').classList.remove('hidden');
+</div>
 
-        setupRealTimeListeners();
 
-        analytics.logEvent('login', {
-            method: 'email',
-            user_id: user.uid
-        });
+<div id="appSection" class="container mt-4 hidden">
 
-    } else {
-        document.getElementById('loginSection').classList.remove('hidden');
-        document.getElementById('appSection').classList.add('hidden');
-        document.getElementById('registerSection').classList.add('hidden');
+<div class="stats">
 
-        // 🔴 ESTA LÍNEA FALTABA
-        showLoading(false);
-    }
-});
-            
-            // Configurar event listeners
-            setupEventListeners();
-            
-            // Configurar listeners de conexión
-            setupConnectionListeners();
-        });
+<div class="stat">
+<h5 id="statProducts">0</h5>
+Productos
+</div>
 
-        function setupEventListeners() {
-            // Login y registro
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
-            document.getElementById('registerForm').addEventListener('submit', handleRegister);
-            document.getElementById('showRegister').addEventListener('click', showRegisterForm);
-            document.getElementById('showLogin').addEventListener('click', showLoginForm);
-            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-            
-            // Productos
-            document.getElementById('saveProductBtn').addEventListener('click', addProduct);
-            document.getElementById('updateProductBtn').addEventListener('click', updateProduct);
-            document.getElementById('searchInput').addEventListener('input', filterProducts);
-            document.getElementById('sortByName').addEventListener('click', () => sortProducts('name'));
-            document.getElementById('sortByQuantity').addEventListener('click', () => sortProducts('quantity'));
-            
-            // Categorías
-            document.getElementById('addCategoryBtn').addEventListener('click', showAddCategoryModal);
-            document.getElementById('saveCategoryBtn').addEventListener('click', addCategory);
-            document.getElementById('categoryFilter').addEventListener('change', filterByCategory);
-            document.getElementById('manageCategoriesBtn').addEventListener('click', showManageCategoriesModal);
-        }
+<div class="stat">
+<h5 id="statUnits">0</h5>
+Unidades
+</div>
 
-        function setupConnectionListeners() {
-    const syncStatus = document.getElementById('syncStatus');
+<div class="stat">
+<h5 id="statValue">$0</h5>
+Valor inventario
+</div>
 
-    window.addEventListener('online', () => {
-        syncStatus.classList.remove('hidden', 'sync-offline');
-        syncStatus.classList.add('sync-online');
-        syncStatus.innerHTML = '<i class="fas fa-wifi"></i> En línea';
-    });
+</div>
 
-    window.addEventListener('offline', () => {
-        syncStatus.classList.remove('hidden', 'sync-online');
-        syncStatus.classList.add('sync-offline');
-        syncStatus.innerHTML = '<i class="fas fa-wifi-off"></i> Sin conexión';
-    });
+
+<div class="row mb-3">
+
+<div class="col-md-4">
+
+<input id="search" class="form-control" placeholder="Buscar">
+
+</div>
+
+<div class="col-md-3">
+
+<select id="filterCategory" class="form-control"></select>
+
+</div>
+
+<div class="col-md-3">
+
+<select id="sort" class="form-control">
+<option value="">Ordenar</option>
+<option value="name">Nombre</option>
+<option value="qty">Cantidad</option>
+<option value="price">Precio</option>
+</select>
+
+</div>
+
+<div class="col-md-2">
+
+<button class="btn btn-success w-100" onclick="exportExcel()">
+Excel
+</button>
+
+</div>
+
+</div>
+
+
+<button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addModal">
+Agregar producto
+</button>
+
+<div class="row" id="productList"></div>
+
+</div>
+
+
+<div class="modal fade" id="addModal">
+
+<div class="modal-dialog">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h5>Producto</h5>
+</div>
+
+<div class="modal-body">
+
+<input id="pName" class="form-control mb-2" placeholder="Nombre">
+
+<input id="pPrice" type="number" class="form-control mb-2" placeholder="Precio">
+
+<input id="pQty" type="number" class="form-control mb-2" placeholder="Cantidad">
+
+<input id="pCategory" class="form-control mb-2" placeholder="Categoría">
+
+<input type="file" id="pImg" class="form-control">
+
+</div>
+
+<div class="modal-footer">
+
+<button class="btn btn-primary" id="saveProduct">
+Guardar
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+
+const firebaseConfig={
+apiKey:"AIzaSyCOlWzZG-q_dEVOXcl_VUeJSqyOLjgUspE",
+authDomain:"inventario-checkmotor.firebaseapp.com",
+projectId:"inventario-checkmotor",
+storageBucket:"inventario-checkmotor.appspot.com",
+messagingSenderId:"477154912469",
+appId:"1:477154912469:web:41eb97c2f847946dd89a5c"
+}
+
+firebase.initializeApp(firebaseConfig)
+
+const db=firebase.firestore()
+const auth=firebase.auth()
+const storage=firebase.storage()
+
+let productsRef
+let currentUser
+let products=[]
+
+auth.onAuthStateChanged(user=>{
+
+if(user){
+
+currentUser=user
+
+productsRef=db.collection("users").doc(user.uid).collection("products")
+
+document.getElementById("loginSection").classList.add("hidden")
+document.getElementById("appSection").classList.remove("hidden")
+
+document.getElementById("userEmail").innerText=user.email
+
+listenProducts()
+
+}else{
+
+document.getElementById("loginSection").classList.remove("hidden")
+document.getElementById("appSection").classList.add("hidden")
+
+}
+
+})
+
+
+document.getElementById("loginForm").addEventListener("submit",async e=>{
+
+e.preventDefault()
+
+await auth.signInWithEmailAndPassword(email.value,password.value)
+
+})
+
+
+document.getElementById("registerBtn").onclick=async()=>{
+
+await auth.createUserWithEmailAndPassword(email.value,password.value)
+
 }
 
 
-    function setupRealTimeListeners() {
-    showLoading(true);
-    
-    // Banderas para controlar la carga inicial
-    let productsFirstLoad = false;
-    let categoriesFirstLoad = false;
+document.getElementById("logoutBtn").onclick=()=>auth.signOut()
 
-    // Función interna para quitar el spinner solo cuando AMBOS terminen
-    const hideLoadingIfReady = () => {
-        if (productsFirstLoad && categoriesFirstLoad) {
-            // Un pequeño delay de 500ms para asegurar que el DOM se renderizó
-            setTimeout(() => showLoading(false), 500);
-        }
-    };
 
-    // 1. Escuchar productos
-    if (productsListener) productsListener();
-    productsListener = productsRef
-        .where("userId", "==", currentUser.uid)
-        .onSnapshot((snapshot) => {
-            products = [];
-            snapshot.forEach((doc) => {
-                products.push({ id: doc.id, ...doc.data() });
-            });
-            loadProducts();
-            productsFirstLoad = true;
-            hideLoadingIfReady();
-        }, (error) => {
-            console.error("Error productos:", error);
-            productsFirstLoad = true; 
-            hideLoadingIfReady();
-        });
+function listenProducts(){
 
-    // 2. Escuchar categorías
-    if (categoriesListener) categoriesListener();
-    categoriesListener = categoriesRef
-        .where("userId", "==", currentUser.uid)
-        .onSnapshot((snapshot) => {
-            categories = [];
-            snapshot.forEach((doc) => {
-                categories.push({ id: doc.id, ...doc.data() });
-            });
-            loadCategories();
-            categoriesFirstLoad = true;
-            hideLoadingIfReady();
-        }, (error) => {
-            console.error("Error categorías:", error);
-            categoriesFirstLoad = true;
-            hideLoadingIfReady();
-        });
+productsRef.onSnapshot(snap=>{
+
+products=[]
+
+snap.forEach(doc=>{
+
+products.push({id:doc.id,...doc.data()})
+
+})
+
+render()
+
+})
+
 }
-        function showLoading(show) {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (show) {
-                loadingOverlay.classList.remove('hidden');
-            } else {
-                loadingOverlay.classList.add('hidden');
-            }
-        }
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            showLoading(true);
-            
-            const email = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                // El cambio de estado se manejará en onAuthStateChanged
-            } catch (error) {
-                showLoading(false);
-                alert('Error al iniciar sesión: ' + error.message);
-            }
-        }
 
-        async function handleRegister(e) {
-            e.preventDefault();
-            showLoading(true);
-            
-            const email = document.getElementById('newUsername').value;
-            const password = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                showLoading(false);
-                alert('Las contraseñas no coinciden');
-                return;
-            }
-            
-            try {
-                // Crear usuario en Firebase Auth
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                
-                // Guardar información adicional del usuario en Firestore
-                await usersRef.doc(userCredential.user.uid).set({
-                    email: email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Crear algunas categorías por defecto
-                const defaultCategories = ["Filtros", "Frenos", "Lubricantes", "Motor", "Ruedas", "Eléctrico"];
-                
-                for (const categoryName of defaultCategories) {
-                    await categoriesRef.add({
-                        name: categoryName,
-                        userId: userCredential.user.uid,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-                
-                showLoginForm();
-                alert('Usuario registrado con éxito. Ahora puede iniciar sesión.');
-            } catch (error) {
-                showLoading(false);
-                alert('Error al registrar usuario: ' + error.message);
-            }
-        }
+function render(){
 
-        function showRegisterForm(e) {
-            if (e) e.preventDefault();
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('registerSection').classList.remove('hidden');
-        }
+let list=document.getElementById("productList")
 
-        function showLoginForm(e) {
-            if (e) e.preventDefault();
-            document.getElementById('registerSection').classList.add('hidden');
-            document.getElementById('loginSection').classList.remove('hidden');
-        }
+list.innerHTML=""
 
-        async function handleLogout() {
-            showLoading(true);
-            try {
-                // Remover listeners
-                if (productsListener) productsListener();
-                if (categoriesListener) categoriesListener();
-                
-                // Cerrar sesión
-                await auth.signOut();
-                
-                // Limpiar datos locales
-                products = [];
-                categories = [];
-                
-                // El cambio de estado se manejará en onAuthStateChanged
-            } catch (error) {
-                console.error("Error al cerrar sesión:", error);
-                showLoading(false);
-            }
-        }
+let search=document.getElementById("search").value.toLowerCase()
 
-        function loadCategories() {
-            const categoriesList = document.getElementById('categoriesList');
-            const categoryFilter = document.getElementById('categoryFilter');
-            const productCategory = document.getElementById('productCategory');
-            const editProductCategory = document.getElementById('editProductCategory');
-            
-            // Limpiar listas
-            categoriesList.innerHTML = '';
-            categoryFilter.innerHTML = '<option value="all">Todas las categorías</option>';
-            productCategory.innerHTML = '<option value="">Seleccione una categoría</option>';
-            editProductCategory.innerHTML = '';
-            
-            if (categories.length === 0) {
-                categoriesList.innerHTML = '<div class="empty-categories"><p>No hay categorías definidas</p></div>';
-                return;
-            }
-            
-            // Contar productos por categoría
-            const productCountByCategory = {};
-            categories.forEach(category => {
-                productCountByCategory[category.name] = products.filter(p => p.category === category.name).length;
-            });
-            
-            // Crear elementos de categoría
-            categories.forEach(category => {
-                // Para la lista de categorías
-                const categoryBadge = document.createElement('div');
-                categoryBadge.className = 'category-badge';
-                categoryBadge.dataset.category = category.name;
-                categoryBadge.innerHTML = `
-                    <i class="fas fa-tag"></i> ${category.name}
-                    <span class="category-products-count">${productCountByCategory[category.name] || 0}</span>
-                `;
-                categoryBadge.addEventListener('click', () => filterByCategoryClick(category.name));
-                categoriesList.appendChild(categoryBadge);
-                
-                // Para el filtro desplegable
-                const filterOption = document.createElement('option');
-                filterOption.value = category.name;
-                filterOption.textContent = category.name;
-                categoryFilter.appendChild(filterOption);
-                
-                // Para el selector de categoría en agregar producto
-                const productOption = document.createElement('option');
-                productOption.value = category.name;
-                productOption.textContent = category.name;
-                productCategory.appendChild(productOption);
-                
-                // Para el selector de categoría en editar producto
-                const editOption = document.createElement('option');
-                editOption.value = category.name;
-                editOption.textContent = category.name;
-                editProductCategory.appendChild(editOption);
-            });
-        }
+let filtered=products.filter(p=>p.name.toLowerCase().includes(search))
 
-        function filterByCategory() {
-            const selectedCategory = document.getElementById('categoryFilter').value;
-            loadProducts(selectedCategory === 'all' ? null : selectedCategory);
-        }
+filtered.forEach(p=>{
 
-        function filterByCategoryClick(category) {
-            document.getElementById('categoryFilter').value = category;
-            loadProducts(category);
-        }
+let low=p.quantity<=3?"lowStock":""
 
-        function loadProducts(categoryFilter = null) {
-            const productList = document.getElementById('productList');
-            productList.innerHTML = '';
-            
-            let filteredProducts = products;
-            if (categoryFilter) {
-                filteredProducts = products.filter(product => product.category === categoryFilter);
-            }
-            
-            if (filteredProducts.length === 0) {
-                productList.innerHTML = '<div class="col-12 text-center"><p>No hay productos en el inventario</p></div>';
-                return;
-            }
-            
-            filteredProducts.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'col-md-4 mb-4';
-                productCard.innerHTML = `
-                    <div class="card h-100">
-                        <img src="${product.image || 'https://via.placeholder.com/300x200?text=Imagen+No+Disponible'}" class="product-img" alt="${product.name}">
-                        <div class="card-body">
-                            <h5 class="card-title">${product.name}</h5>
-                            <p class="card-text">Categoría: <span class="badge bg-secondary">${product.category}</span></p>
-                            <p class="card-text">Precio: <strong>$${product.price.toFixed(2)}</strong></p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span>Cantidad: </span>
-                                <div class="d-flex align-items-center">
-                                    <button class="btn btn-sm btn-outline-secondary quantity-btn decrease-btn" data-id="${product.id}">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <span class="quantity-display mx-2">${product.quantity}</span>
-                                    <button class="btn btn-sm btn-outline-secondary quantity-btn increase-btn" data-id="${product.id}">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-white d-flex justify-content-between">
-                            <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${product.id}">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${product.id}">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </div>
-                    </div>
-                `;
-                productList.appendChild(productCard);
-            });
-            
-            // Añadir event listeners a los botones
-            document.querySelectorAll('.increase-btn').forEach(btn => {
-                btn.addEventListener('click', () => adjustQuantity(btn.dataset.id, 1));
-            });
-            
-            document.querySelectorAll('.decrease-btn').forEach(btn => {
-                btn.addEventListener('click', () => adjustQuantity(btn.dataset.id, -1));
-            });
-            
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', () => openEditModal(btn.dataset.id));
-            });
-            
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', () => deleteProduct(btn.dataset.id));
-            });
-        }
+list.innerHTML+=`
 
-        async function addProduct() {
-            const name = document.getElementById('productName').value;
-            const category = document.getElementById('productCategory').value;
-            const price = parseFloat(document.getElementById('productPrice').value);
-            const quantity = parseInt(document.getElementById('productQuantity').value);
-            const imageInput = document.getElementById('productImage');
-            
-            if (!name || !category || isNaN(price) || isNaN(quantity)) {
-                alert('Por favor, complete todos los campos correctamente');
-                return;
-            }
-            
-            let imageUrl = "https://via.placeholder.com/300x200?text=Imagen+No+Disponible";
-            
-            // En una aplicación real, aquí subirías la imagen a Firebase Storage
-            // Por ahora, usaremos un placeholder
-            if (imageInput.files.length > 0) {
-                const file = imageInput.files[0];
-                const storageRef = storage.ref("products/" + Date.now() + "_" + file.name);
+<div class="col-md-4 mb-3">
 
-                await storageRef.put(file);
+<div class="card ${low}">
 
-                imageUrl = await storageRef.getDownloadURL();
-            }
-            
-            try {
-                showLoading(true);
-                await productsRef.add({
-                    name,
-                    category,
-                    price,
-                    quantity,
-                    image: imageUrl,
-                    userId: currentUser.uid,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Cerrar modal y resetear formulario
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
-                modal.hide();
-                document.getElementById('addProductForm').reset();
-                
-            } catch (error) {
-                console.error("Error adding product:", error);
-                alert("Error al agregar producto: " + error.message);
-            } finally {
-                showLoading(false);
-            }
-        }
+<img src="${p.image||'https://via.placeholder.com/300'}" class="product-img">
 
-        function openEditModal(productId) {
-            const product = products.find(p => p.id === productId);
-            
-            if (!product) return;
-            
-            document.getElementById('editProductId').value = product.id;
-            document.getElementById('editProductName').value = product.name;
-            document.getElementById('editProductCategory').value = product.category;
-            document.getElementById('editProductPrice').value = product.price;
-            document.getElementById('editProductQuantity').value = product.quantity;
-            
-            const imageContainer = document.getElementById('currentImageContainer');
-            imageContainer.innerHTML = `
-                <p>Imagen actual:</p>
-                <img src="${product.image || 'https://via.placeholder.com/300x200?text=Imagen+No+Disponible'}" class="img-thumbnail" style="max-height: 150px;">
-            `;
-            
-            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
-            modal.show();
-        }
+<div class="card-body">
 
-        async function updateProduct() {
-            const productId = document.getElementById('editProductId').value;
-            const name = document.getElementById('editProductName').value;
-            const category = document.getElementById('editProductCategory').value;
-            const price = parseFloat(document.getElementById('editProductPrice').value);
-            const quantity = parseInt(document.getElementById('editProductQuantity').value);
-            const imageInput = document.getElementById('editProductImage');
-            
-            if (!name || !category || isNaN(price) || isNaN(quantity)) {
-                alert('Por favor, complete todos los campos correctamente');
-                return;
-            }
-            
-            try {
-                showLoading(true);
-                
-                const updateData = {
-                    name,
-                    category,
-                    price,
-                    quantity,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                
-                // Si se subió una nueva imagen (en una app real, se subiría a Firebase Storage)
-                if (imageInput.files.length > 0) {
-                    const file = imageInput.files[0];
-                    const storageRef = storage.ref("products/" + Date.now() + "_" + file.name);
+<h5>${p.name}</h5>
 
-                    await storageRef.put(file);
+Precio $${p.price}<br>
 
-                    updateData.image = await storageRef.getDownloadURL();
-                }
-                
-                await productsRef.doc(productId).update(updateData);
-                
-                // Cerrar modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
-                modal.hide();
-                
-            } catch (error) {
-                console.error("Error updating product:", error);
-                alert("Error al actualizar producto: " + error.message);
-            } finally {
-                showLoading(false);
-            }
-        }
+Cantidad ${p.quantity}<br>
 
-        async function adjustQuantity(productId, change) {
-            const product = products.find(p => p.id === productId);
-            
-            if (!product) return;
-            
-            const newQuantity = product.quantity + change;
-            
-            // No permitir cantidades negativas
-            if (newQuantity < 0) return;
-            
-            try {
-                await productsRef.doc(productId).update({
-                    quantity: newQuantity,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } catch (error) {
-                console.error("Error adjusting quantity:", error);
-                alert("Error al ajustar cantidad: " + error.message);
-            }
-        }
+Categoría ${p.category||""}
 
-        async function deleteProduct(productId) {
-            if (!confirm('¿Está seguro de que desea eliminar este producto?')) return;
-            
-            try {
-                showLoading(true);
-                await productsRef.doc(productId).delete();
-            } catch (error) {
-                console.error("Error deleting product:", error);
-                alert("Error al eliminar producto: " + error.message);
-                showLoading(false);
-            }
-        }
+</div>
 
-        function filterProducts() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const categoryFilter = document.getElementById('categoryFilter').value;
-            
-            let filteredProducts = products;
-            
-            // Aplicar filtro de categoría primero
-            if (categoryFilter !== 'all') {
-                filteredProducts = filteredProducts.filter(product => product.category === categoryFilter);
-            }
-            
-            // Aplicar filtro de búsqueda
-            if (searchTerm) {
-                filteredProducts = filteredProducts.filter(product => 
-                    product.name.toLowerCase().includes(searchTerm) || 
-                    product.category.toLowerCase().includes(searchTerm)
-                );
-            }
-            
-            const productList = document.getElementById('productList');
-            productList.innerHTML = '';
-            
-            if (filteredProducts.length === 0) {
-                productList.innerHTML = '<div class="col-12 text-center"><p>No se encontraron productos</p></div>';
-                return;
-            }
-            
-            filteredProducts.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'col-md-4 mb-4';
-                productCard.innerHTML = `
-                    <div class="card h-100">
-                        <img src="${product.image || 'https://via.placeholder.com/300x200?text=Imagen+No+Disponible'}" class="product-img" alt="${product.name}">
-                        <div class="card-body">
-                            <h5 class="card-title">${product.name}</h5>
-                            <p class="card-text">Categoría: <span class="badge bg-secondary">${product.category}</span></p>
-                            <p class="card-text">Precio: <strong>$${product.price.toFixed(2)}</strong></p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span>Cantidad: </span>
-                                <div class="d-flex align-items-center">
-                                    <button class="btn btn-sm btn-outline-secondary quantity-btn decrease-btn" data-id="${product.id}">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <span class="quantity-display mx-2">${product.quantity}</span>
-                                    <button class="btn btn-sm btn-outline-secondary quantity-btn increase-btn" data-id="${product.id}">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-white d-flex justify-content-between">
-                            <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${product.id}">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${product.id}">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </div>
-                    </div>
-                `;
-                productList.appendChild(productCard);
-            });
-            
-            // Re-asignar event listeners
-            document.querySelectorAll('.increase-btn').forEach(btn => {
-                btn.addEventListener('click', () => adjustQuantity(btn.dataset.id, 1));
-            });
-            
-            document.querySelectorAll('.decrease-btn').forEach(btn => {
-                btn.addEventListener('click', () => adjustQuantity(btn.dataset.id, -1));
-            });
-            
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', () => openEditModal(btn.dataset.id));
-            });
-            
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', () => deleteProduct(btn.dataset.id));
-            });
-        }
+<div class="card-footer">
 
-        function sortProducts(criteria) {
-            const categoryFilter = document.getElementById('categoryFilter').value;
-            
-            let filteredProducts = products;
-            
-            // Aplicar filtro de categoría primero
-            if (categoryFilter !== 'all') {
-                filteredProducts = filteredProducts.filter(product => product.category === categoryFilter);
-            }
-            
-            if (criteria === 'name') {
-                filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
-            } else if (criteria === 'quantity') {
-                filteredProducts.sort((a, b) => a.quantity - b.quantity);
-            }
-            
-            const productList = document.getElementById('productList');
-            productList.innerHTML = '';
-            
-            filteredProducts.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'col-md-4 mb-4';
-                productCard.innerHTML = `
-                    <div class="card h-100">
-                        <img src="${product.image || 'https://via.placeholder.com/300x200?text=Imagen+No+Disponible'}" class="product-img" alt="${product.name}">
-                        <div class="card-body">
-                            <h5 class="card-title">${product.name}</h5>
-                            <p class="card-text">Categoría: <span class="badge bg-secondary">${product.category}</span></p>
-                            <p class="card-text">Precio: <strong>$${product.price.toFixed(2)}</strong></p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span>Cantidad: </span>
-                                <div class="d-flex align-items-center">
-                                    <button class="btn btn-sm btn-outline-secondary quantity-btn decrease-btn" data-id="${product.id}">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <span class="quantity-display mx-2">${product.quantity}</span>
-                                    <button class="btn btn-sm btn-outline-secondary quantity-btn increase-btn" data-id="${product.id}">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-white d-flex justify-content-between">
-                            <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${product.id}">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${product.id}">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </div>
-                    </div>
-                `;
-                productList.appendChild(productCard);
-            });
-            
-            // Re-asignar event listeners
-            document.querySelectorAll('.increase-btn').forEach(btn => {
-                btn.addEventListener('click', () => adjustQuantity(btn.dataset.id, 1));
-            });
-            
-            document.querySelectorAll('.decrease-btn').forEach(btn => {
-                btn.addEventListener('click', () => adjustQuantity(btn.dataset.id, -1));
-            });
-            
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', () => openEditModal(btn.dataset.id));
-            });
-            
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', () => deleteProduct(btn.dataset.id));
-            });
-        }
+<button class="btn btn-danger btn-sm" onclick="del('${p.id}')">
+Eliminar
+</button>
 
-        function showAddCategoryModal() {
-            const modal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
-            modal.show();
-        }
+</div>
 
-        async function addCategory() {
-            const categoryName = document.getElementById('categoryName').value.trim();
-            
-            if (!categoryName) {
-                alert('Por favor, ingrese un nombre para la categoría');
-                return;
-            }
-            
-            // Verificar si la categoría ya existe localmente
-            if (categories.find(c => c.name === categoryName)) {
-                alert('Esta categoría ya existe');
-                return;
-            }
-            
-            try {
-                showLoading(true);
-                await categoriesRef.add({
-                    name: categoryName,
-                    userId: currentUser.uid,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Cerrar modal y resetear formulario
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
-                modal.hide();
-                document.getElementById('addCategoryForm').reset();
-                
-            } catch (error) {
-                console.error("Error adding category:", error);
-                alert("Error al agregar categoría: " + error.message);
-            } finally {
-                showLoading(false);
-            }
-        }
+</div>
 
-        async function showManageCategoriesModal() {
-            const categoriesManagementList = document.getElementById('categoriesManagementList');
-            
-            categoriesManagementList.innerHTML = '';
-            
-            if (categories.length === 0) {
-                categoriesManagementList.innerHTML = '<div class="empty-categories"><p>No hay categorías definidas</p></div>';
-            } else {
-                // Contar productos por categoría
-                const productCountByCategory = {};
-                categories.forEach(category => {
-                    productCountByCategory[category.name] = products.filter(p => p.category === category.name).length;
-                });
-                
-                categories.forEach(category => {
-                    const categoryItem = document.createElement('div');
-                    categoryItem.className = 'd-flex justify-content-between align-items-center mb-3 p-2 border rounded';
-                    categoryItem.innerHTML = `
-                        <div>
-                            <strong>${category.name}</strong>
-                            <span class="badge bg-secondary ms-2">${productCountByCategory[category.name] || 0} productos</span>
-                        </div>
-                        <button class="btn btn-sm btn-danger delete-category-btn" data-id="${category.id}" data-category="${category.name}">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    `;
-                    categoriesManagementList.appendChild(categoryItem);
-                });
-                
-                // Añadir event listeners a los botones de eliminar
-                document.querySelectorAll('.delete-category-btn').forEach(btn => {
-                    btn.addEventListener('click', () => deleteCategory(btn.dataset.id, btn.dataset.category));
-                });
-            }
-            
-            const modal = new bootstrap.Modal(document.getElementById('manageCategoriesModal'));
-            modal.show();
-        }
+</div>
 
-        async function deleteCategory(categoryId, categoryName) {
-            const productsInCategory = products.filter(p => p.category === categoryName);
-            
-            if (productsInCategory.length > 0) {
-                if (!confirm(`La categoría "${categoryName}" tiene ${productsInCategory.length} productos. ¿Desea eliminarla junto con todos sus productos?`)) {
-                    return;
-                }
-                
-                // Eliminar todos los productos de esta categoría
-                try {
-                    showLoading(true);
-                    const batch = db.batch();
-                    
-                    productsInCategory.forEach(product => {
-                        const productRef = productsRef.doc(product.id);
-                        batch.delete(productRef);
-                    });
-                    
-                    // Eliminar la categoría
-                    const categoryRef = categoriesRef.doc(categoryId);
-                    batch.delete(categoryRef);
-                    
-                    await batch.commit();
-                    
-                } catch (error) {
-                    console.error("Error deleting category and products:", error);
-                    alert("Error al eliminar categoría y productos: " + error.message);
-                    showLoading(false);
-                    return;
-                }
-            } else {
-                if (!confirm(`¿Está seguro de que desea eliminar la categoría "${categoryName}"?`)) {
-                    return;
-                }
-                
-                try {
-                    showLoading(true);
-                    await categoriesRef.doc(categoryId).delete();
-                } catch (error) {
-                    console.error("Error deleting category:", error);
-                    alert("Error al eliminar categoría: " + error.message);
-                    showLoading(false);
-                    return;
-                }
-            }
-            
-            // Cerrar el modal de gestión
-            const modal = bootstrap.Modal.getInstance(document.getElementById('manageCategoriesModal'));
-            modal.hide();
-            
-            alert(`Categoría "${categoryName}" eliminada correctamente`);
-        }
-    </script>
+`
+
+})
+
+updateStats()
+
+}
+
+
+function updateStats(){
+
+let units=0
+let value=0
+
+products.forEach(p=>{
+
+units+=p.quantity
+value+=p.quantity*p.price
+
+})
+
+statProducts.innerText=products.length
+statUnits.innerText=units
+statValue.innerText="$"+value.toFixed(2)
+
+}
+
+
+saveProduct.onclick=async()=>{
+
+let name=pName.value
+let price=parseFloat(pPrice.value)
+let qty=parseInt(pQty.value)
+let cat=pCategory.value
+
+let img=""
+
+if(pImg.files.length){
+
+let file=pImg.files[0]
+
+let ref=storage.ref("products/"+Date.now())
+
+await ref.put(file)
+
+img=await ref.getDownloadURL()
+
+}
+
+await productsRef.add({
+name:name,
+price:price,
+quantity:qty,
+category:cat,
+image:img
+})
+
+bootstrap.Modal.getInstance(addModal).hide()
+
+}
+
+
+async function del(id){
+
+if(confirm("Eliminar producto?")){
+
+await productsRef.doc(id).delete()
+
+}
+
+}
+
+
+search.oninput=render
+
+
+function exportExcel(){
+
+let csv="Nombre,Precio,Cantidad\n"
+
+products.forEach(p=>{
+
+csv+=`${p.name},${p.price},${p.quantity}\n`
+
+})
+
+let blob=new Blob([csv])
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+a.download="inventario.csv"
+a.click()
+
+}
+
+</script>
+
 </body>
 </html>
