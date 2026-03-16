@@ -569,27 +569,6 @@
             setupConnectionListeners();
         });
 
-        function setupConnectionListeners() {
-            // Monitorizar estado de conexión
-            firebase.firestore().enableNetwork()
-            .then(() => {
-                db.enableNetwork().then(() => {
-                    const syncStatus = document.getElementById('syncStatus');
-                    syncStatus.classList.remove('hidden', 'sync-offline');
-                    syncStatus.classList.add('sync-online');
-                    syncStatus.innerHTML = '<i class="fas fa-wifi"></i> En línea';
-                });
-            });
-            
-            db.disableNetwork()
-            .then(() => {
-                const syncStatus = document.getElementById('syncStatus');
-                syncStatus.classList.remove('hidden', 'sync-online');
-                syncStatus.classList.add('sync-offline');
-                syncStatus.innerHTML = '<i class="fas fa-wifi-off"></i> Sin conexión';
-            });
-        }
-
         function setupEventListeners() {
             // Login y registro
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
