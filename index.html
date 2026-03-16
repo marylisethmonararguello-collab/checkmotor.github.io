@@ -608,8 +608,20 @@
 }
 
 
-        function setupRealTimeListeners() {
+    function setupRealTimeListeners() {
     showLoading(true);
+    
+    // Banderas para controlar la carga inicial
+    let productsFirstLoad = false;
+    let categoriesFirstLoad = false;
+
+    // Función interna para quitar el spinner solo cuando AMBOS terminen
+    const hideLoadingIfReady = () => {
+        if (productsFirstLoad && categoriesFirstLoad) {
+            // Un pequeño delay de 500ms para asegurar que el DOM se renderizó
+            setTimeout(() => showLoading(false), 500);
+        }
+    };
 
     // 1. Escuchar productos
     if (productsListener) productsListener();
@@ -621,12 +633,12 @@
                 products.push({ id: doc.id, ...doc.data() });
             });
             loadProducts();
-            
-            // Solo quitamos el loading si ya tenemos las categorías también
-            if (categories.length > 0) showLoading(false);
+            productsFirstLoad = true;
+            hideLoadingIfReady();
         }, (error) => {
-            console.error("Error cargando productos:", error);
-            showLoading(false);
+            console.error("Error productos:", error);
+            productsFirstLoad = true; 
+            hideLoadingIfReady();
         });
 
     // 2. Escuchar categorías
@@ -638,15 +650,13 @@
             snapshot.forEach((doc) => {
                 categories.push({ id: doc.id, ...doc.data() });
             });
-            
-            // Actualizamos la interfaz de categorías
-            loadCategories(); 
-            
-            // Quitamos el loading cuando las categorías estén listas
-            showLoading(false);
+            loadCategories();
+            categoriesFirstLoad = true;
+            hideLoadingIfReady();
         }, (error) => {
-            console.error("Error cargando categorías:", error);
-            showLoading(false);
+            console.error("Error categorías:", error);
+            categoriesFirstLoad = true;
+            hideLoadingIfReady();
         });
 }
         function showLoading(show) {
