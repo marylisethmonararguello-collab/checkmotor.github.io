@@ -538,29 +538,30 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar estado de autenticación
             auth.onAuthStateChanged((user) => {
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('currentUser').textContent = user.email;
-                    document.getElementById('loginSection').classList.add('hidden');
-                    document.getElementById('registerSection').classList.add('hidden');
-                    document.getElementById('appSection').classList.remove('hidden');
-                    
-                    // Cargar datos desde Firestore
-                    setupRealTimeListeners();
+    if (user) {
+        currentUser = user;
+        document.getElementById('currentUser').textContent = user.email;
 
-                    showLoading(false);
-                    
-                    // Registrar evento de analytics
-                    analytics.logEvent('login', {
-                        method: 'email',
-                        user_id: user.uid
-                    });
-                } else {
-                    document.getElementById('loginSection').classList.remove('hidden');
-                    document.getElementById('appSection').classList.add('hidden');
-                    document.getElementById('registerSection').classList.add('hidden');
-                }
-            });
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('registerSection').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+
+        setupRealTimeListeners();
+
+        analytics.logEvent('login', {
+            method: 'email',
+            user_id: user.uid
+        });
+
+    } else {
+        document.getElementById('loginSection').classList.remove('hidden');
+        document.getElementById('appSection').classList.add('hidden');
+        document.getElementById('registerSection').classList.add('hidden');
+
+        // 🔴 ESTA LÍNEA FALTABA
+        showLoading(false);
+    }
+});
             
             // Configurar event listeners
             setupEventListeners();
