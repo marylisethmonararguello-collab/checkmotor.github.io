@@ -14,60 +14,27 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 
-body{
-background:#f2f3f7;
-font-family:Arial;
-}
+body{background:#f2f3f7;font-family:Arial}
 
-.hidden{
-display:none;
-}
+.hidden{display:none}
 
-.navbar{
-background:#2c3e50;
-}
+.navbar{background:#2c3e50}
 
-.card{
-border-radius:10px;
-box-shadow:0 3px 6px rgba(0,0,0,.2);
-}
+.card{border-radius:10px;box-shadow:0 3px 6px rgba(0,0,0,.2)}
 
-.product-img{
-height:180px;
-object-fit:cover;
-}
+.product-img{height:180px;object-fit:cover}
 
-.stats{
-display:flex;
-gap:15px;
-margin-bottom:20px;
-flex-wrap:wrap;
-}
+.stats{display:flex;gap:15px;margin-bottom:20px;flex-wrap:wrap}
 
-.stat{
-flex:1;
-min-width:150px;
-background:white;
-padding:15px;
-border-radius:8px;
-text-align:center;
-box-shadow:0 3px 6px rgba(0,0,0,.1);
-}
+.stat{flex:1;min-width:150px;background:white;padding:15px;border-radius:8px;text-align:center}
 
-.low{
-border:2px solid red;
-}
+.low{border:2px solid red}
 
-.login-box{
-max-width:420px;
-margin:auto;
-margin-top:120px;
-background:white;
-padding:30px;
-border-radius:10px;
-}
+.login-box{max-width:420px;margin:auto;margin-top:120px;background:white;padding:30px;border-radius:10px}
 
 </style>
 
@@ -85,9 +52,7 @@ border-radius:10px;
 
 <span id="userEmail" class="text-white me-3"></span>
 
-<button id="logoutBtn" class="btn btn-light btn-sm">
-Salir
-</button>
+<button id="logoutBtn" class="btn btn-light btn-sm">Salir</button>
 
 </div>
 
@@ -106,17 +71,13 @@ Salir
 
 <input id="password" type="password" class="form-control mb-3" placeholder="Contraseña">
 
-<button class="btn btn-primary w-100">
-Entrar
-</button>
+<button class="btn btn-primary w-100">Entrar</button>
 
 </form>
 
 <hr>
 
-<button id="registerBtn" class="btn btn-success w-100">
-Crear cuenta
-</button>
+<button id="registerBtn" class="btn btn-success w-100">Crear cuenta</button>
 
 </div>
 
@@ -146,38 +107,26 @@ Valor inventario
 <div class="row mb-3">
 
 <div class="col-md-3">
-
 <input id="search" class="form-control" placeholder="Buscar">
-
 </div>
 
 <div class="col-md-3">
-
 <select id="filterCategory" class="form-control">
 <option value="all">Todas categorías</option>
 </select>
-
 </div>
 
 <div class="col-md-3">
-
 <select id="sort" class="form-control">
-
 <option value="">Ordenar</option>
 <option value="name">Nombre</option>
 <option value="qty">Cantidad</option>
 <option value="price">Precio</option>
-
 </select>
-
 </div>
 
 <div class="col-md-3">
-
-<button class="btn btn-success w-100" onclick="exportExcel()">
-Exportar Excel
-</button>
-
+<button class="btn btn-success w-100" onclick="exportCSV()">Exportar</button>
 </div>
 
 </div>
@@ -185,32 +134,30 @@ Exportar Excel
 
 <div class="row mb-3">
 
-<div class="col-md-4">
-
-<input id="newCategory" class="form-control" placeholder="Nueva categoría">
-
-</div>
-
-<div class="col-md-2">
-
-<button class="btn btn-secondary" onclick="addCategory()">
-Crear categoría
-</button>
-
-</div>
-
 <div class="col-md-6 text-end">
-
 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
 Agregar producto
 </button>
-
 </div>
 
 </div>
 
 
 <div class="row" id="productList"></div>
+
+
+<div class="row mt-5">
+
+<div class="col-md-6">
+<canvas id="categoryChart"></canvas>
+</div>
+
+<div class="col-md-6">
+<canvas id="stockChart"></canvas>
+</div>
+
+</div>
+
 
 </div>
 
@@ -222,9 +169,7 @@ Agregar producto
 <div class="modal-content">
 
 <div class="modal-header">
-
 <h5>Producto</h5>
-
 </div>
 
 <div class="modal-body">
@@ -235,7 +180,7 @@ Agregar producto
 
 <input id="pQty" type="number" class="form-control mb-2" placeholder="Cantidad">
 
-<select id="pCategory" class="form-control mb-2"></select>
+<input id="pCategory" class="form-control mb-2" placeholder="Categoría (ej: Filtros)">
 
 <input type="file" id="pImg" class="form-control">
 
@@ -243,9 +188,7 @@ Agregar producto
 
 <div class="modal-footer">
 
-<button id="saveProduct" class="btn btn-primary">
-Guardar
-</button>
+<button id="saveProduct" class="btn btn-primary">Guardar</button>
 
 </div>
 
@@ -257,7 +200,6 @@ Guardar
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 
 <script>
 
@@ -285,6 +227,9 @@ let categories=[]
 
 let editing=null
 
+let categoryChart
+let stockChart
+
 
 auth.onAuthStateChanged(user=>{
 
@@ -293,23 +238,19 @@ if(user){
 currentUser=user
 
 productsRef=db.collection("users").doc(user.uid).collection("products")
-
 categoriesRef=db.collection("users").doc(user.uid).collection("categories")
 
 loginSection.classList.add("hidden")
-
 appSection.classList.remove("hidden")
 
 userEmail.innerText=user.email
 
 listenProducts()
-
 listenCategories()
 
 }else{
 
 loginSection.classList.remove("hidden")
-
 appSection.classList.add("hidden")
 
 }
@@ -318,20 +259,13 @@ appSection.classList.add("hidden")
 
 
 loginForm.onsubmit=async e=>{
-
 e.preventDefault()
-
 await auth.signInWithEmailAndPassword(email.value,password.value)
-
 }
-
 
 registerBtn.onclick=async()=>{
-
 await auth.createUserWithEmailAndPassword(email.value,password.value)
-
 }
-
 
 logoutBtn.onclick=()=>auth.signOut()
 
@@ -343,9 +277,7 @@ productsRef.onSnapshot(snap=>{
 products=[]
 
 snap.forEach(doc=>{
-
 products.push({id:doc.id,...doc.data()})
-
 })
 
 render()
@@ -360,20 +292,15 @@ function listenCategories(){
 categoriesRef.onSnapshot(snap=>{
 
 categories=[]
-
 filterCategory.innerHTML='<option value="all">Todas categorías</option>'
-
-pCategory.innerHTML=""
 
 snap.forEach(doc=>{
 
-let c=doc.data()
+let c=doc.data().name
 
-categories.push(c.name)
+categories.push(c)
 
-filterCategory.innerHTML+=`<option>${c.name}</option>`
-
-pCategory.innerHTML+=`<option>${c.name}</option>`
+filterCategory.innerHTML+=`<option>${c}</option>`
 
 })
 
@@ -384,23 +311,14 @@ pCategory.innerHTML+=`<option>${c.name}</option>`
 
 function render(){
 
-let list=products
+let list=[...products]
 
 let s=search.value.toLowerCase()
 
-if(s){
-
-list=list.filter(p=>p.name.toLowerCase().includes(s))
-
-}
+if(s) list=list.filter(p=>p.name.toLowerCase().includes(s))
 
 let cat=filterCategory.value
-
-if(cat!="all"){
-
-list=list.filter(p=>p.category==cat)
-
-}
+if(cat!="all") list=list.filter(p=>p.category==cat)
 
 let order=sort.value
 
@@ -427,9 +345,7 @@ productList.innerHTML+=`
 <h5>${p.name}</h5>
 
 Precio $${p.price}<br>
-
 Cantidad ${p.quantity}<br>
-
 Categoría ${p.category}
 
 </div>
@@ -451,6 +367,7 @@ Categoría ${p.category}
 })
 
 updateStats()
+updateCharts()
 
 }
 
@@ -461,10 +378,8 @@ let units=0
 let value=0
 
 products.forEach(p=>{
-
 units+=p.quantity
 value+=p.price*p.quantity
-
 })
 
 statProducts.innerText=products.length
@@ -474,23 +389,21 @@ statValue.innerText="$"+value.toFixed(2)
 }
 
 
-async function addCategory(){
-
-if(!newCategory.value) return
-
-await categoriesRef.add({name:newCategory.value})
-
-newCategory.value=""
-
-}
-
-
 saveProduct.onclick=async()=>{
 
 let name=pName.value
 let price=parseFloat(pPrice.value)
 let qty=parseInt(pQty.value)
-let cat=pCategory.value
+let cat=pCategory.value.trim()
+
+if(!name||!price||!qty||!cat){
+alert("Complete todos los campos")
+return
+}
+
+if(!categories.includes(cat)){
+await categoriesRef.add({name:cat})
+}
 
 let img=""
 
@@ -509,13 +422,11 @@ img=await ref.getDownloadURL()
 if(editing){
 
 await productsRef.doc(editing).update({
-
 name:name,
 price:price,
 quantity:qty,
 category:cat,
 image:img
-
 })
 
 editing=null
@@ -523,13 +434,11 @@ editing=null
 }else{
 
 await productsRef.add({
-
 name:name,
 price:price,
 quantity:qty,
 category:cat,
 image:img
-
 })
 
 }
@@ -557,11 +466,8 @@ new bootstrap.Modal(productModal).show()
 
 async function del(id){
 
-if(confirm("Eliminar producto?")){
-
+if(confirm("Eliminar producto?"))
 await productsRef.doc(id).delete()
-
-}
 
 }
 
@@ -571,14 +477,56 @@ filterCategory.onchange=render
 sort.onchange=render
 
 
-function exportExcel(){
+function updateCharts(){
+
+let categoryData={}
+
+products.forEach(p=>{
+
+if(!categoryData[p.category]) categoryData[p.category]=0
+
+categoryData[p.category]+=p.quantity
+
+})
+
+let labels=Object.keys(categoryData)
+let data=Object.values(categoryData)
+
+if(categoryChart) categoryChart.destroy()
+
+categoryChart=new Chart(categoryChartCanvas,{
+type:"pie",
+data:{labels:labels,datasets:[{data:data}]}
+})
+
+
+let low=0
+let normal=0
+
+products.forEach(p=>{
+if(p.quantity<=3) low++
+else normal++
+})
+
+if(stockChart) stockChart.destroy()
+
+stockChart=new Chart(stockChartCanvas,{
+type:"bar",
+data:{
+labels:["Stock bajo","Stock normal"],
+datasets:[{data:[low,normal]}]
+}
+})
+
+}
+
+
+function exportCSV(){
 
 let csv="Nombre,Precio,Cantidad,Categoria\n"
 
 products.forEach(p=>{
-
 csv+=`${p.name},${p.price},${p.quantity},${p.category}\n`
-
 })
 
 let blob=new Blob([csv])
