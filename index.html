@@ -610,39 +610,21 @@
             document.getElementById('manageCategoriesBtn').addEventListener('click', showManageCategoriesModal);
         }
 
-        function setupRealTimeListeners() {
-            showLoading(true);
-            
-            // Escuchar cambios en productos en tiempo real
-            if (productsListener) productsListener(); // Remover listener anterior si existe
-            productsListener = productsRef
-                .where("userId", "==", currentUser.uid)
-                .onSnapshot((snapshot) => {
-                    products = [];
-                    snapshot.forEach((doc) => {
-                        products.push({ id: doc.id, ...doc.data() });
-                    });
-                    loadProducts();
-                    showLoading(false);
-                }, (error) => {
-                    console.error("Error listening to products:", error);
-                    showLoading(false);
-                });
-            
-            // Escuchar cambios en categorías en tiempo real
-            if (categoriesListener) categoriesListener(); // Remover listener anterior si existe
-            categoriesListener = categoriesRef
-                .where("userId", "==", currentUser.uid)
-                .onSnapshot((snapshot) => {
-                    categories = [];
-                    snapshot.forEach((doc) => {
-                        categories.push({ id: doc.id, ...doc.data() });
-                    });
-                    loadCategories();
-                }, (error) => {
-                    console.error("Error listening to categories:", error);
-                });
-        }
+        function setupConnectionListeners() {
+    const syncStatus = document.getElementById('syncStatus');
+
+    window.addEventListener('online', () => {
+        syncStatus.classList.remove('hidden', 'sync-offline');
+        syncStatus.classList.add('sync-online');
+        syncStatus.innerHTML = '<i class="fas fa-wifi"></i> En línea';
+    });
+
+    window.addEventListener('offline', () => {
+        syncStatus.classList.remove('hidden', 'sync-online');
+        syncStatus.classList.add('sync-offline');
+        syncStatus.innerHTML = '<i class="fas fa-wifi-off"></i> Sin conexión';
+    });
+}
 
         function showLoading(show) {
             const loadingOverlay = document.getElementById('loadingOverlay');
