@@ -36,6 +36,32 @@ body{background:#f2f3f7;font-family:Arial}
 
 .login-box{max-width:420px;margin:auto;margin-top:120px;background:white;padding:30px;border-radius:10px}
 
+.category-container{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:20px;
+}
+
+.category-chip{
+padding:8px 14px;
+border-radius:20px;
+border:1px solid #ddd;
+background:white;
+cursor:pointer;
+font-size:14px;
+}
+
+.category-chip:hover{
+background:#3498db;
+color:white;
+}
+
+.category-active{
+background:#2c3e50;
+color:white;
+}
+
 </style>
 
 </head>
@@ -60,7 +86,6 @@ body{background:#f2f3f7;font-family:Arial}
 
 </nav>
 
-
 <div id="loginSection" class="login-box">
 
 <h4 class="text-center mb-3">Acceso</h4>
@@ -80,7 +105,6 @@ body{background:#f2f3f7;font-family:Arial}
 <button id="registerBtn" class="btn btn-success w-100">Crear cuenta</button>
 
 </div>
-
 
 <div id="appSection" class="container mt-4 hidden">
 
@@ -103,48 +127,38 @@ Valor inventario
 
 </div>
 
+<input id="search" class="form-control mb-3" placeholder="Buscar producto">
+
+<div id="categoryButtons" class="category-container"></div>
 
 <div class="row mb-3">
 
-<div class="col-md-3">
-<input id="search" class="form-control" placeholder="Buscar">
-</div>
+<div class="col-md-6">
 
-<div class="col-md-3">
-<select id="filterCategory" class="form-control">
-<option value="all">Todas categorías</option>
-</select>
-</div>
-
-<div class="col-md-3">
 <select id="sort" class="form-control">
+
 <option value="">Ordenar</option>
 <option value="name">Nombre</option>
 <option value="qty">Cantidad</option>
 <option value="price">Precio</option>
+
 </select>
-</div>
-
-<div class="col-md-3">
-<button class="btn btn-success w-100" onclick="exportCSV()">Exportar</button>
-</div>
 
 </div>
-
-
-<div class="row mb-3">
 
 <div class="col-md-6 text-end">
+
+<button class="btn btn-success" onclick="exportCSV()">Exportar</button>
+
 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
 Agregar producto
 </button>
-</div>
 
 </div>
 
+</div>
 
 <div class="row" id="productList"></div>
-
 
 <div class="row mt-5">
 
@@ -158,9 +172,7 @@ Agregar producto
 
 </div>
 
-
 </div>
-
 
 <div class="modal fade" id="productModal">
 
@@ -180,7 +192,7 @@ Agregar producto
 
 <input id="pQty" type="number" class="form-control mb-2" placeholder="Cantidad">
 
-<input id="pCategory" class="form-control mb-2" placeholder="Categoría (ej: Filtros)">
+<input id="pCategory" class="form-control mb-2" placeholder="Categoría">
 
 <input type="file" id="pImg" class="form-control">
 
@@ -197,7 +209,6 @@ Agregar producto
 </div>
 
 </div>
-
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -218,18 +229,18 @@ const db=firebase.firestore()
 const auth=firebase.auth()
 const storage=firebase.storage()
 
+let products=[]
+let categories=[]
+
 let currentUser
 let productsRef
 let categoriesRef
 
-let products=[]
-let categories=[]
-
+let activeCategory="all"
 let editing=null
 
 let categoryChart
 let stockChart
-
 
 auth.onAuthStateChanged(user=>{
 
@@ -257,7 +268,6 @@ appSection.classList.add("hidden")
 
 })
 
-
 loginForm.onsubmit=async e=>{
 e.preventDefault()
 await auth.signInWithEmailAndPassword(email.value,password.value)
@@ -268,7 +278,6 @@ await auth.createUserWithEmailAndPassword(email.value,password.value)
 }
 
 logoutBtn.onclick=()=>auth.signOut()
-
 
 function listenProducts(){
 
@@ -286,28 +295,54 @@ render()
 
 }
 
-
 function listenCategories(){
 
 categoriesRef.onSnapshot(snap=>{
 
 categories=[]
-filterCategory.innerHTML='<option value="all">Todas categorías</option>'
 
 snap.forEach(doc=>{
-
-let c=doc.data().name
-
-categories.push(c)
-
-filterCategory.innerHTML+=`<option>${c}</option>`
-
+categories.push(doc.data().name)
 })
+
+updateCategoryButtons()
 
 })
 
 }
 
+function updateCategoryButtons(){
+
+categoryButtons.innerHTML=""
+
+let total=products.length
+
+categoryButtons.innerHTML+=`
+<button class="category-chip ${activeCategory=='all'?'category-active':''}" onclick="selectCategory('all')">
+Todas (${total})
+</button>
+`
+
+categories.forEach(c=>{
+
+let count=products.filter(p=>p.category==c).length
+
+categoryButtons.innerHTML+=`
+<button class="category-chip ${activeCategory==c?'category-active':''}" onclick="selectCategory('${c}')">
+${c} (${count})
+</button>
+`
+
+})
+
+}
+
+function selectCategory(cat){
+
+activeCategory=cat
+render()
+
+}
 
 function render(){
 
@@ -317,8 +352,9 @@ let s=search.value.toLowerCase()
 
 if(s) list=list.filter(p=>p.name.toLowerCase().includes(s))
 
-let cat=filterCategory.value
-if(cat!="all") list=list.filter(p=>p.category==cat)
+if(activeCategory!="all"){
+list=list.filter(p=>p.category==activeCategory)
+}
 
 let order=sort.value
 
@@ -367,10 +403,10 @@ Categoría ${p.category}
 })
 
 updateStats()
+updateCategoryButtons()
 updateCharts()
 
 }
-
 
 function updateStats(){
 
@@ -387,7 +423,6 @@ statUnits.innerText=units
 statValue.innerText="$"+value.toFixed(2)
 
 }
-
 
 saveProduct.onclick=async()=>{
 
@@ -447,7 +482,6 @@ bootstrap.Modal.getInstance(productModal).hide()
 
 }
 
-
 function edit(id){
 
 let p=products.find(x=>x.id==id)
@@ -463,7 +497,6 @@ new bootstrap.Modal(productModal).show()
 
 }
 
-
 async function del(id){
 
 if(confirm("Eliminar producto?"))
@@ -471,22 +504,16 @@ await productsRef.doc(id).delete()
 
 }
 
-
 search.oninput=render
-filterCategory.onchange=render
 sort.onchange=render
-
 
 function updateCharts(){
 
 let categoryData={}
 
 products.forEach(p=>{
-
 if(!categoryData[p.category]) categoryData[p.category]=0
-
 categoryData[p.category]+=p.quantity
-
 })
 
 let labels=Object.keys(categoryData)
@@ -498,7 +525,6 @@ categoryChart=new Chart(categoryChartCanvas,{
 type:"pie",
 data:{labels:labels,datasets:[{data:data}]}
 })
-
 
 let low=0
 let normal=0
@@ -512,14 +538,10 @@ if(stockChart) stockChart.destroy()
 
 stockChart=new Chart(stockChartCanvas,{
 type:"bar",
-data:{
-labels:["Stock bajo","Stock normal"],
-datasets:[{data:[low,normal]}]
-}
+data:{labels:["Stock bajo","Stock normal"],datasets:[{data:[low,normal]}]}
 })
 
 }
-
 
 function exportCSV(){
 
