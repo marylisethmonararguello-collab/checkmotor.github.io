@@ -520,6 +520,7 @@
         const analytics = firebase.analytics();
         const db = firebase.firestore();
         const auth = firebase.auth();
+        const storage = firebase.storage();
 
         // Referencias a las colecciones de Firestore
         const productsRef = db.collection("products");
@@ -896,7 +897,11 @@
             // Por ahora, usaremos un placeholder
             if (imageInput.files.length > 0) {
                 const file = imageInput.files[0];
-                imageUrl = URL.createObjectURL(file);
+                const storageRef = storage.ref("products/" + Date.now() + "_" + file.name);
+
+                await storageRef.put(file);
+
+                imageUrl = await storageRef.getDownloadURL();
             }
             
             try {
@@ -972,7 +977,11 @@
                 // Si se subió una nueva imagen (en una app real, se subiría a Firebase Storage)
                 if (imageInput.files.length > 0) {
                     const file = imageInput.files[0];
-                    updateData.image = URL.createObjectURL(file);
+                    const storageRef = storage.ref("products/" + Date.now() + "_" + file.name);
+
+                    await storageRef.put(file);
+
+                    updateData.image = await storageRef.getDownloadURL();
                 }
                 
                 await productsRef.doc(productId).update(updateData);
