@@ -626,6 +626,57 @@
     });
 }
 
+
+        function setupRealTimeListeners() {
+
+    showLoading(true);
+
+    // Escuchar productos
+    if (productsListener) productsListener();
+
+    productsListener = productsRef
+        .where("userId", "==", currentUser.uid)
+        .onSnapshot((snapshot) => {
+
+            products = [];
+
+            snapshot.forEach((doc) => {
+                products.push({ id: doc.id, ...doc.data() });
+            });
+
+            loadProducts();
+
+            showLoading(false);
+
+        }, (error) => {
+
+            console.error("Error cargando productos:", error);
+            showLoading(false);
+
+        });
+
+    // Escuchar categorías
+    if (categoriesListener) categoriesListener();
+
+    categoriesListener = categoriesRef
+        .where("userId", "==", currentUser.uid)
+        .onSnapshot((snapshot) => {
+
+            categories = [];
+
+            snapshot.forEach((doc) => {
+                categories.push({ id: doc.id, ...doc.data() });
+            });
+
+            loadCategories();
+
+        }, (error) => {
+
+            console.error("Error cargando categorías:", error);
+
+        });
+}
+        
         function showLoading(show) {
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (show) {
