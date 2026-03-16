@@ -609,58 +609,46 @@
 
 
         function setupRealTimeListeners() {
-
     showLoading(true);
 
-    // Escuchar productos
+    // 1. Escuchar productos
     if (productsListener) productsListener();
-
     productsListener = productsRef
         .where("userId", "==", currentUser.uid)
         .onSnapshot((snapshot) => {
-
             products = [];
-
             snapshot.forEach((doc) => {
                 products.push({ id: doc.id, ...doc.data() });
             });
-
             loadProducts();
-
-            showLoading(false);
-
+            
+            // Solo quitamos el loading si ya tenemos las categorías también
+            if (categories.length > 0) showLoading(false);
         }, (error) => {
-
             console.error("Error cargando productos:", error);
             showLoading(false);
-
         });
 
-    // Escuchar categorías
+    // 2. Escuchar categorías
     if (categoriesListener) categoriesListener();
-
     categoriesListener = categoriesRef
         .where("userId", "==", currentUser.uid)
         .onSnapshot((snapshot) => {
-
             categories = [];
-
             snapshot.forEach((doc) => {
                 categories.push({ id: doc.id, ...doc.data() });
             });
-
+            
+            // Actualizamos la interfaz de categorías
+            loadCategories(); 
+            
+            // Quitamos el loading cuando las categorías estén listas
+            showLoading(false);
         }, (error) => {
-
             console.error("Error cargando categorías:", error);
-
+            showLoading(false);
         });
-             loadCategories();
-                        setTimeout(() => {
-                showLoading(false);
-            }, 3000);
-
 }
-        
         function showLoading(show) {
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (show) {
