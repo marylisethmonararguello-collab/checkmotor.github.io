@@ -547,6 +547,8 @@
                     
                     // Cargar datos desde Firestore
                     setupRealTimeListeners();
+
+                    showLoading(false);
                     
                     // Registrar evento de analytics
                     analytics.logEvent('login', {
