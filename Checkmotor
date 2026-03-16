@@ -509,7 +509,7 @@
             apiKey: "AIzaSyCOlWzZG-q_dEVOXcl_VUeJSqyOLjgUspE",
             authDomain: "inventario-checkmotor.firebaseapp.com",
             projectId: "inventario-checkmotor",
-            storageBucket: "inventario-checkmotor.firebasestorage.app",
+            storageBucket: "inventario-checkmotor.appspot.com",
             messagingSenderId: "477154912469",
             appId: "1:477154912469:web:41eb97c2f847946dd89a5c",
             measurementId: "G-7DB811LTYL"
