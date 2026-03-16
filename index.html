@@ -649,13 +649,16 @@
                 categories.push({ id: doc.id, ...doc.data() });
             });
 
-            loadCategories();
-
         }, (error) => {
 
             console.error("Error cargando categorías:", error);
 
         });
+             loadCategories();
+                        setTimeout(() => {
+                showLoading(false);
+            }, 3000);
+
 }
         
         function showLoading(show) {
